@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"strconv"
 	"strings"
 )
+
+const boardSize = 3
 
 /*fill board with 0 at the beginning*/
 func clean_board(curBoard [][]int) {
@@ -45,17 +48,17 @@ func sumSlice2D(inSlice [][]int, idx int, axis int) int {
 * 2 game is not over
  */
 func checkGameState(curBoard [][]int) int {
-	// check rows and columns for 3 of the same symbol
+	// check rows and columns for boardSize of the same symbol
 	for ax := 0; ax < 2; ax++ {
-		for ind := 0; ind < 3; ind++ {
-			if lineVal := sumSlice2D(curBoard, ind, ax); lineVal == 3 {
+		for ind := 0; ind < boardSize; ind++ {
+			if lineVal := sumSlice2D(curBoard, ind, ax); lineVal == boardSize {
 				return 1
-			} else if lineVal == -3 {
+			} else if lineVal == -boardSize {
 				return -1
 			}
 		}
 	}
-	// check the diagonals for 3 of the same symbol
+	// check the diagonals for boardSize of the same symbol
 	boardSize := len(curBoard)
 	diag := 0
 	revDiag := 0
@@ -63,9 +66,9 @@ func checkGameState(curBoard [][]int) int {
 		diag += curBoard[i][i]
 		revDiag += curBoard[i][boardSize-(i+1)]
 	}
-	if diag == 3 || revDiag == 3 {
+	if diag == boardSize || revDiag == boardSize {
 		return 1
-	} else if diag == -3 || revDiag == -3 {
+	} else if diag == -boardSize || revDiag == -boardSize {
 		return -1
 	}
 	// see how many fields are left to play
@@ -86,7 +89,7 @@ func checkGameState(curBoard [][]int) int {
 /*print current state of the board*/
 func printBoard(curBoard [][]int, tokenOne string, tokenNegOne string) {
 	boardSize := len(curBoard)
-	fmt.Println("-------------")
+	fmt.Printf("%s%s\n", strings.Repeat("----", boardSize), "-")
 	for i := 0; i < boardSize; i++ {
 		out := "| "
 		for j := 0; j < boardSize; j++ {
@@ -101,7 +104,7 @@ func printBoard(curBoard [][]int, tokenOne string, tokenNegOne string) {
 			out = out + token + " | "
 		}
 		fmt.Println(out)
-		fmt.Println("-------------")
+		fmt.Printf("%s%s\n", strings.Repeat("----", boardSize), "-")
 	}
 }
 
@@ -120,11 +123,11 @@ func minimax(curBoard [][]int, depth int, isMax bool) int {
 	// find value of the best move
 	if isMax {
 		best := int(math.Inf(-1))
-		for i := 0; i < 3; i++ {
-			for j := 0; j < 3; j++ {
+		for i := 0; i < boardSize; i++ {
+			for j := 0; j < boardSize; j++ {
 				if curBoard[i][j] == 0 {
 					curBoard[i][j] = 1
-					if mscore := minimax(curBoard, depth+1, !isMax); mscore > best {
+					if mscore := minimax(curBoard, depth+1, !isMax) - depth; mscore > best {
 						best = mscore
 					}
 					curBoard[i][j] = 0
@@ -134,11 +137,11 @@ func minimax(curBoard [][]int, depth int, isMax bool) int {
 		return best
 	} else {
 		best := int(math.Inf(1))
-		for i := 0; i < 3; i++ {
-			for j := 0; j < 3; j++ {
+		for i := 0; i < boardSize; i++ {
+			for j := 0; j < boardSize; j++ {
 				if curBoard[i][j] == 0 {
 					curBoard[i][j] = -1
-					if mscore := minimax(curBoard, depth+1, !isMax); mscore < best {
+					if mscore := minimax(curBoard, depth+1, !isMax) + depth; mscore < best {
 						best = mscore
 					}
 					curBoard[i][j] = 0
@@ -167,8 +170,8 @@ func findMove(curBoard [][]int, symbol int) (int, int) {
 		compFunc = bigger
 	}
 	// of all possible moves search them and chose the best
-	for i := 0; i < 3; i++ {
-		for j := 0; j < 3; j++ {
+	for i := 0; i < boardSize; i++ {
+		for j := 0; j < boardSize; j++ {
 			if curBoard[i][j] == 0 {
 				curBoard[i][j] = symbol
 				curMoveScore := minimax(curBoard, 0, symBool)
@@ -189,45 +192,38 @@ func userInputScan() (int, int) {
 	var userInput string
 	fmt.Print("Your input: ")
 	fmt.Scanln(&userInput)
-	chosenX, chosenY := -1, -1
-	switch {
-	case userInput == "1":
-		chosenX, chosenY = 0, 0
-	case userInput == "2":
-		chosenX, chosenY = 0, 1
-	case userInput == "3":
-		chosenX, chosenY = 0, 2
-	case userInput == "4":
-		chosenX, chosenY = 1, 0
-	case userInput == "5":
-		chosenX, chosenY = 1, 1
-	case userInput == "6":
-		chosenX, chosenY = 1, 2
-	case userInput == "7":
-		chosenX, chosenY = 2, 0
-	case userInput == "8":
-		chosenX, chosenY = 2, 1
-	case userInput == "9":
-		chosenX, chosenY = 2, 2
-	default:
+	inAsNum, err  := strconv.Atoi(userInput)
+	if err != nil {
+		fmt.Println("Game terminated")
 		os.Exit(0)
 	}
+
+	chosenY := (inAsNum - 1) % boardSize
+	chosenX := int(math.Floor(float64(inAsNum - 1) / boardSize))
 	return chosenX, chosenY
 }
 
 func main() {
+	fmt.Println("")
 	fmt.Println(strings.Repeat("+", 65))
-	fmt.Println("+ Board coordinated to set your symbol", strings.Repeat(" ", 24), "+")
+	fmt.Println("+ Board coordinates to set your symbol", strings.Repeat(" ", 24), "+")
 	fmt.Println("+ Enter the coordinate and press enter/return to make your move +")
 	fmt.Println("+ To end the game input any other character apart from 1-9", strings.Repeat(" ", 4), "+")
 	fmt.Println(strings.Repeat("+", 65))
-	for _, val := range [][]int{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}} {
-		fmt.Println(val)
+
+	fmt.Println("")
+	fmt.Println("Board coordinates:")
+	for i := 1; i <= boardSize*boardSize; i++ {
+		fmt.Printf("%-2d ", i)
+		if i % boardSize == 0 {
+			fmt.Println("")
+		}
 	}
+	fmt.Println("")
 
 	// get user symbol for the board display
 	var userChar string
-	for{
+	for {
 		fmt.Print("Enter your symbol (one character): ")
 		fmt.Scanln(&userChar)
 		if len(userChar) == 1 {
@@ -235,11 +231,15 @@ func main() {
 		}
 	}
 
-	board := [][]int{
-		{0, 0, 0},
-		{0, 0, 0},
-		{0, 0, 0},
+	board := [][]int{}
+	for i := 0; i < boardSize; i++ {
+		row := []int{}
+		for j := 0; j < boardSize; j++ {
+			row = append(row, 0)
+		}
+		board = append(board, row)
 	}
+
 	boardState := 2
 	// user board coordinates
 	chosenX, chosenY := -1, -1
@@ -302,10 +302,19 @@ func main() {
 			}
 		}
 		rountCount++
-		if rountCount % 2 == 0 {
+		if rountCount%2 == 0 {
 			starter = -1
 		} else {
 			starter = 1
+		}
+		switch {
+		case boardState == 1:
+			fmt.Println("-_-_- You lose -_-_-")
+		case boardState == -1:
+		fmt.Println("-_-_- You win -_-_-")
+		case boardState == 0:
+		fmt.Println("-_-_- Tie -_-_-")
+
 		}
 		// reset board for the next round
 		clean_board(board)
