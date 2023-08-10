@@ -72,7 +72,7 @@ func checkGameState(curBoard [][]int) int {
 		return -1
 	}
 	// see how many fields are left to play
-	freeFields := 9
+	freeFields := boardSize * boardSize
 	for i := 0; i < boardSize; i++ {
 		for j := 0; j < boardSize; j++ {
 			if curBoard[i][j] != 0 {
